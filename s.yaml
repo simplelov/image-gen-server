@@ -1,0 +1,35 @@
+edition: 1.0.0
+name: image-gen-server
+access: default
+
+services:
+  image-gen-app:
+    component: fc
+    props:
+      region: cn-shanghai
+      service:
+        name: image-gen-service
+        description: 'AI图片生成服务'
+        internetAccess: true
+      function:
+        name: image-gen-handler
+        description: 'AI图片生成Web应用'
+        runtime: python3.9
+        codeUri: ./
+        handler: index.handler
+        memorySize: 512
+        timeout: 60
+        environmentVariables:
+          JIMENG_API_TOKEN: 61e752e7c27c7b567f018a3160396a1e
+      triggers:
+        - name: httpTrigger
+          type: http
+          config:
+            authType: anonymous
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - HEAD
+              - OPTIONS

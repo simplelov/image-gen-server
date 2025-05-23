@@ -1,6 +1,6 @@
 # Web
 Flask>=2.0.0
-gunicorn>=21.2.0
+Werkzeug>=2.0.0
 
 # Core
 requests>=2.26.0
@@ -11,17 +11,14 @@ python-dotenv>=1.0.0
 # API
 aiohttp>=3.8.1
 aiofiles>=0.8.0
-psutil>=5.8.0
 
-# MCP (optional for local development)
-fastmcp==0.4.1
-mcp==1.2.1
-brotlipy>=0.7.0
+# 阿里云函数计算需要的库
+fcpy>=1.0.0
 
-# Optional for image processing
-opencv-python
+# 图像处理
+opencv-python-headless
 
-# Comment out these to avoid installation issues on Render
+# 可选项 - 如果需要再解除注释
 # GFPGAN
 # realesrgan
 # torch==1.13.1

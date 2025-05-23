@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# 创建持久化目录
+mkdir -p /tmp/images
+chmod 777 /tmp/images
+
+# 创建符号链接到项目目录
+ln -sf /tmp/images $FC_FUNC_CODE_PATH/images
+
+# 启动函数
+exec $@
