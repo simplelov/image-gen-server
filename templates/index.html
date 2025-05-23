@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI图片生成器</title>
+    <!-- 添加自定义favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- 使用多个CDN源以确保可靠加载 -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #e0f7fa 0%, #fffde4 100%);
+            min-height:100vh;
+            position:relative;
+            overflow-x:hidden;
+        }
+        .navbar {
+            background: linear-gradient(90deg, #38bdf8 0%, #a5b4fc 100%);
+            box-shadow: 0 4px 24px #38bdf820;
+        }
+        .navbar-brand { color: #fff !important; font-weight: bold; letter-spacing: 2px; }
+        .wave {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 120px;
+            z-index: 0;
+        }
+        #particles-js {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .main-content { position:relative; z-index:1; }
+        .form-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px #38bdf840;
+            padding: 2rem 2rem 1.5rem 2rem;
+            margin-bottom: 2rem;
+            transition: box-shadow 0.2s;
+            border: 2px solid #e0f2fe;
+            animation: fadeInDown 0.8s;
+        }
+        .form-card:hover {
+            box-shadow: 0 16px 48px #38bdf860;
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-40px); }
+            to { opacity: 1; transform: none; }
+        }
+        .form-label {
+            font-weight: 500;
+            color: #0ea5e9;
+            margin-bottom: 0.3rem;
+            letter-spacing: 1px;
+        }
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 1.5px solid #e0f2fe;
+            height: 48px; /* 统一高度 */
+            padding: 0 1rem;
+            color: #0c4a6e;
+            box-shadow: 0 4px 12px #38bdf815;
+            transition: all 0.25s ease;
+            background-color: #fff;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        .form-control:focus, .form-select:focus {
+            border: 2px solid #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+            outline: none;
+            background-color: #fff;
+        }
+        .form-control:hover, .form-select:hover {
+            border-color: #38bdf8;
+            background-color: #fbfdff;
+        }
+        .form-select {
+            background-image: linear-gradient(45deg, transparent 50%, #38bdf8 50%), linear-gradient(135deg, #38bdf8 50%, transparent 50%);
+            background-position: calc(100% - 20px) center, calc(100% - 15px) center;
+            background-size: 5px 5px, 5px 5px;
+            background-repeat: no-repeat;
+            cursor: pointer;
+            padding-right: 30px;
+            appearance: none;
+            -webkit-appearance: none;
+            position: relative;
+            z-index: 1;
+        }
+        .form-select:focus {
+            background-image: linear-gradient(45deg, transparent 50%, #0ea5e9 50%), linear-gradient(135deg, #0ea5e9 50%, transparent 50%);
+            border-color: #0ea5e9;
+        }
+        .select-wrapper {
+            position: relative;
+        }
+        .form-select option {
+            background: #fff;
+            color: #222;
+            padding: 10px;
+            transition: background-color 0.2s;
+        }
+        .form-select option:hover {
+            background-color: #e0f7fa;
+        }
+        
+        /* 添加下拉动画 */
+        @keyframes selectDropdown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 示例按钮动画效果 */
+        .example-btn-active {
+            animation: pulse 0.5s ease;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 2px 8px rgba(56, 189, 248, 0.2); }
+            50% { transform: scale(1.1); box-shadow: 0 0 20px rgba(56, 189, 248, 0.5); }
+            100% { transform: scale(1); box-shadow: 0 2px 8px rgba(56, 189, 248, 0.2); }
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #38bdf8 0%, #a5b4fc 100%);
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 8px #38bdf820;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+            height: 48px; /* 统一高度 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-primary:hover, .btn-primary:focus {
+            background: linear-gradient(90deg, #0ea5e9 0%, #6366f1 100%);
+            box-shadow: 0 4px 16px #38bdf850;
+            transform: scale(1.02); /* 减小缩放效果 */
+        }
+        .btn-secondary {
+            background: #fff;
+            color: #38bdf8;
+            border: 1.5px solid #38bdf8;
+            border-radius: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 8px #38bdf810;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            height: 48px; /* 统一高度 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-secondary:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #e0f2fe 0%, #dbeafe 100%);
+            transition: all 0.3s ease;
+            z-index: -1;
+        }
+        .btn-secondary:hover, .btn-secondary:focus {
+            color: #0ea5e9;
+            box-shadow: 0 4px 16px #38bdf820;
+            transform: scale(1.02); /* 与主按钮保持一致 */
+            border-color: #0ea5e9;
+        }
+        .btn-secondary:hover:before, .btn-secondary:focus:before {
+            width: 100%;
+        }
+        .gallery-img {
+            max-width: 100%; border-radius: 14px;
+            box-shadow: 0 2px 12px #0001;
+            cursor:pointer;
+            transition: transform 0.25s, box-shadow 0.25s;
+        }
+        .img-card {
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 4px 24px #38bdf820;
+            padding: 0.7rem 0.7rem 0.5rem 0.7rem;
+            margin-bottom: 1.2rem;
+            position: relative;
+            overflow: hidden;
+            transition: box-shadow 0.2s, transform 0.2s, padding-bottom 0.2s, height 0.2s;
+        }
+        .img-card:hover {
+            box-shadow: 0 12px 48px #38bdf880, 0 0 0 4px #38bdf820;
+            transform: scale(1.03);
+            padding-bottom: 1.2rem;
+        }
+        .img-card:hover .img-actions-row {
+            opacity: 1;
+            pointer-events: auto;
+            max-height: 50px;
+            margin-top: 0.5rem;
+            margin-bottom: 0.3rem;
+        }
+        .img-actions-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            max-height: 0;
+            margin-top: 0;
+            margin-bottom: 0;
+            overflow: hidden;
+            transition: opacity 0.2s, max-height 0.2s, margin 0.2s;
+        }
+        .action-btn {
+            width: 38px; height: 38px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e0f2fe 0%, #a5b4fc 100%);
+            box-shadow: 0 2px 8px #38bdf820;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.25em;
+            color: #38bdf8;
+            margin: 0;
+            padding: 0;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.15s;
+            cursor: pointer;
+            position: relative;
+        }
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .action-btn:hover:not(:disabled), .action-btn:focus:not(:disabled) {
+            background: linear-gradient(135deg, #38bdf8 0%, #a5b4fc 100%);
+            color: #fff;
+            box-shadow: 0 4px 16px #38bdf850;
+        }
+        .action-btn .tooltip {
+            display: none;
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #222;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            white-space: nowrap;
+            z-index: 10;
+        }
+        .action-btn:hover .tooltip, .action-btn:focus .tooltip {
+            display: block;
+        }
+        .param-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 0.2em;
+        }
+        .param-badge {
+            background: linear-gradient(90deg, #e0f2fe 0%, #a5b4fc 100%);
+            color: #0ea5e9;
+            border-radius: 8px;
+            font-size: 0.85em;
+            padding: 2px 10px;
+            box-shadow: 0 1px 4px #38bdf820;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .desc {
+            color: #666;
+            font-size: 0.97em;
+            margin-bottom: 0.2em;
+            word-break: break-all;
+        }
+        .gallery-title {
+            font-size: 2.1rem;
+            font-weight: bold;
+            text-align: center;
+            background: linear-gradient(90deg, #38bdf8 10%, #a5b4fc 90%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 2px 8px #38bdf850);
+            letter-spacing: 2px;
+            margin-bottom: 0.7em;
+            margin-top: 1.2em;
+            position: relative;
+            animation: fadeInDown 1s;
+        }
+        .gallery-title::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 4px;
+            margin: 0.3em auto 0 auto;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #38bdf8 10%, #a5b4fc 90%);
+            box-shadow: 0 2px 8px #38bdf850;
+            animation: underlineGrow 1.2s;
+        }
+        @keyframes underlineGrow {
+            from { width: 0; opacity: 0; }
+            to { width: 60px; opacity: 1; }
+        }
+        .modal-img { max-width:100%; max-height:70vh; display:block; margin:auto; border-radius:14px; }
+        .footer {
+            text-align:center; color:#aaa; font-size:0.95em;
+            margin-top:2rem; padding-bottom:1rem;
+        }
+        #progress .spinner-border { width:2rem; height:2rem; color:#0ea5e9; }
+        .qrcode-modal .modal-content { text-align:center; padding:2rem 1rem; }
+        ::-webkit-scrollbar {
+            width: 8px; background: #e0f2fe; border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #a5b4fc; border-radius: 8px;
+        }
+        @media (max-width: 768px) {
+            .form-card { padding: 1rem 0.5rem; }
+            .img-card { padding: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+<div id="particles-js"></div>
+<svg class="wave" viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill="#38bdf8" fill-opacity="0.18" d="M0,64L60,74.7C120,85,240,107,360,117.3C480,128,600,128,720,112C840,96,960,64,1080,53.3C1200,43,1320,53,1380,58.7L1440,64L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path></svg>
+<nav class="navbar navbar-expand-lg mb-4 shadow-sm">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="#">AI图片生成器</a>
+  </div>
+</nav>
+<div class="container main-content">
+    <form id="gen-form" class="row g-3 mb-4 align-items-center form-card">
+        <div class="col-md-4">
+            <input type="text" class="form-control" id="prompt" placeholder="请输入图片描述，如：未来科技城市夜景" required>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" id="style">
+                <option value="default">默认风格</option>
+                <option value="realistic">写实</option>
+                <option value="anime">动漫</option>
+                <option value="oil">油画</option>
+                <option value="pixel">像素</option>
+                <option value="cyberpunk">赛博朋克</option>
+                <option value="sketch">素描</option>
+                <option value="watercolor">水彩</option>
+                <option value="cartoon">卡通</option>
+                <option value="retro">复古</option>
+                <option value="future">未来</option>
+                <option value="illustration">插画</option>
+                <option value="chinese">国风</option>
+                <option value="bw">黑白</option>
+                <option value="lowpoly">低多边形</option>
+                <option value="dream">梦幻</option>
+                <option value="fairy">童话</option>
+                <option value="scifi">科幻</option>
+                <option value="magic">魔幻</option>
+                <option value="minimal">极简</option>
+                <option value="abstract">抽象</option>
+                <option value="steampunk">蒸汽波</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" id="ratio">
+                <option value="1:1">1:1 正方形</option>
+                <option value="16:9">16:9 横图</option>
+                <option value="4:3">4:3 横图</option>
+                <option value="3:4">3:4 竖图</option>
+                <option value="9:16">9:16 竖图</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" id="resolution">
+                <option value="1024">1024px</option>
+                <option value="768">768px</option>
+                <option value="512">512px</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="button" class="btn btn-secondary" id="example-btn">示例</button>
+            <button type="submit" class="btn btn-primary flex-grow-1">生成图片</button>
+        </div>
+    </form>
+    <div id="progress" class="mb-3 text-center" style="display:none;">
+        <div class="spinner-border" role="status"></div>
+        <div class="mt-2 text-secondary">图片生成中，请稍候...</div>
+    </div>
+    <h3 class="gallery-title">已生成图片</h3>
+    <div id="gallery" class="row"></div>
+</div>
+<!-- 预览大图Modal -->
+<div class="modal fade" id="imgModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body"><img id="modalImg" class="modal-img"></div>
+    </div>
+  </div>
+</div>
+<!-- 分享二维码Modal -->
+<div class="modal fade qrcode-modal" id="qrModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <h5>扫码分享图片</h5>
+      <div id="qrcode"></div>
+      <div class="mt-2 text-muted" style="font-size:0.95em;">可用微信/QQ/浏览器扫码</div>
+    </div>
+  </div>
+</div>
+<div class="footer">© 2024 AI图片生成器 | 由 <a href="https://github.com/fengin/image-gen-server" target="_blank">image-gen-server</a> 驱动</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// 粒子动画初始化
+particlesJS('particles-js', {
+  particles: {
+    number: { value: 40, density: { enable: true, value_area: 800 } },
+    color: { value: ['#38bdf8', '#a5b4fc', '#fbbf24', '#10b981'] },
+    shape: { type: 'circle' },
+    opacity: { value: 0.3, random: true },
+    size: { value: 6, random: true },
+    line_linked: { enable: true, distance: 120, color: '#a5b4fc', opacity: 0.2, width: 1 },
+    move: { enable: true, speed: 1.2, direction: 'none', random: true, straight: false, out_mode: 'out', bounce: false }
+  },
+  interactivity: {
+    detect_on: 'canvas',
+    events: { onhover: { enable: true, mode: 'repulse' }, onclick: { enable: true, mode: 'push' }, resize: true },
+    modes: { repulse: { distance: 80, duration: 0.4 }, push: { particles_nb: 4 } }
+  },
+  retina_detect: true
+});
+const THEMES = [
+    '城市', '自然', '动物', '人物', '航天', '机器人', '火车', '飞机', 
+    '海洋', '太空', '森林', '花园', '叶子', '木屋', '公园', '街道', '大楼',
+    '猫咪', '狗狗', '星空', '晨曦', '黄昏', '阳光', '雨滴', '雪花', '云朵',
+    '山川', '河流', '瓜果', '花卉', '电脑', '手机', '桌面', '汽车', '自行车',
+    '篮球', '足球', '音乐', '书籍', '品茶', '咖啡', '甜点', '沙滩', '高山'
+];
+
+const ADJECTIVES = [
+    '美丽的', '壮观的', '神秘的', '古老的', '现代的', '未来的', '安静的', 
+    '快乐的', '忧伤的', '激动的', '温馨的', '凛冬的', '清新的', '深深的',
+    '孤单的', '活泼的', '幽静的', '自由的', '拉风的', '富有的', '灿烂的', '暗淡的',
+    '明亮的', '暗正的', '小巧的', '寂静的', '神奇的', '傲嫩的', '魅力的', '清陨的',
+    '有趣的', '惊人的', '精美的', '纯净的', '紫红的', '金黄的', '碎裂的', '亮丽的'
+];
+
+const STYLES = [
+    '写实风格', '油画风格', '水彩风格', '素描风格', '动漫风格', 
+    '卡通风格', '抽象风格', '赛博朝克风格', '蒸汽波风格', '像素风格',
+    '复古风格', '未来风格', '极简风格', '梵高风格', '低多边形风格',
+    '魔幻风格', '童话风格', '科幻风格', '梦幻风格', '国风风格',
+    '拆解主义风格', '超现实风格', '精细风格', '立体主义风格', '数字草图风格'
+];
+
+const EXAMPLES = [
+    '未来科技城市夜景',
+    '可爱的柴犬插画',
+    '梵高风格的向日葵',
+    '赛博朝克风格的摩天大楼',
+    '油画风格的海边日落',
+    '像素风格的宇航员',
+    '动漫风格的少女与猫',
+    '写实风格的森林小屋',
+    '素描风格的老爷车',
+    '蒸汽波风格的霓虹街道',
+    '童话风格的公主',
+    '科幻风格的飞船',
+    '魔幻风格的城堡',
+    '极简风格的图标',
+    '抽象风格的圆形',
+    '蒸汽波风格的霓虹灯',
+];
+// 假定图片参数数据结构，后续可由后端返回
+const imageParams = JSON.parse(localStorage.getItem('imageParams')||'{}');
+function saveImageParams(filename, params) {
+    imageParams[filename] = params;
+    localStorage.setItem('imageParams', JSON.stringify(imageParams));
+}
+function getImageParams(filename) {
+    return imageParams[filename] || null;
+}
+function paramBadges(params) {
+    if(!params) return '';
+    return `
+        <span class='param-badge'>🎨风格:${params.style||'默认'}</span>
+        <span class='param-badge'>📐比例:${params.ratio||'1:1'}</span>
+        <span class='param-badge'>🖼️分辨率:${params.resolution||'1024'}</span>
+        <span class='param-badge'>📝${params.prompt||''}</span>
+    `;
+}
+function loadImages() {
+    fetch('/api/images').then(r => r.json()).then(data => {
+        const gallery = document.getElementById('gallery');
+        gallery.innerHTML = '';
+        data.images.reverse().forEach(img => {
+            const params = getImageParams(img);
+            const col = document.createElement('div');
+            col.className = 'col-md-3';
+            col.innerHTML = `
+            <div class='img-card'>
+                <img src='/images/${img}' class='gallery-img mb-2' onclick='showModal("/images/${img}")'>
+                <div class='desc'>${img}</div>
+                <div class='param-badges'>${paramBadges(params)}</div>
+                <div class='img-actions-row'>
+                    <button class='action-btn' title='预览' onclick='showModal("/images/${img}")'><span>👁️</span><span class="tooltip">预览</span></button>
+                    <button class='action-btn' title='下载' onclick='downloadImg("/images/${img}")'><span>📥</span><span class="tooltip">下载</span></button>
+                    <button class='action-btn' title='复制链接' onclick='copyLink("/images/${img}")'><span>📋</span><span class="tooltip">复制链接</span></button>
+                    <button class='action-btn' title='分享' onclick='showQR("/images/${img}")'><span>📤</span><span class="tooltip">分享</span></button>
+                    <button class='action-btn' title='图片增强' onclick='facefixImg("${img}", this)'><span>✨</span><span class="tooltip">图片增强</span></button>
+                    <button class='action-btn' title='删除' onclick='deleteImg("${img}")'><span>🗑️</span><span class="tooltip">删除</span></button>
+                </div>
+            </div>`;
+            gallery.appendChild(col);
+        });
+    });
+}
+loadImages();
+// 生成图片表单提交
+const form = document.getElementById('gen-form');
+form.onsubmit = function(e) {
+    e.preventDefault();
+    const prompt = document.getElementById('prompt').value;
+    const style = document.getElementById('style').value;
+    const ratio = document.getElementById('ratio').value;
+    const resolution = document.getElementById('resolution').value;
+    document.getElementById('progress').style.display = '';
+    fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, style, ratio, resolution })
+    }).then(r => r.json()).then(data => {
+        document.getElementById('progress').style.display = 'none';
+        if(data.success) {
+            // 假定返回图片名
+            if(data.filename) saveImageParams(data.filename, {prompt, style, ratio, resolution});
+            loadImages();
+            form.reset();
+        } else {
+            alert(data.msg || '生成失败');
+            if(data.devMsg) console.error('开发调试信息:', data.devMsg);
+        }
+    });
+}
+// 增强版示例提示词生成器
+const exampleBtn = document.getElementById('example-btn');
+exampleBtn.onclick = function() {
+    // 有 30% 的概率从预设的例子中选择
+    if (Math.random() < 0.3) {
+        const prompt = EXAMPLES[Math.floor(Math.random() * EXAMPLES.length)];
+        document.getElementById('prompt').value = prompt;
+        
+        // 根据提示词自动选择适合的风格
+        const styleSelect = document.getElementById('style');
+        for (let i = 0; i < styleSelect.options.length; i++) {
+            const option = styleSelect.options[i];
+            if (prompt.includes(option.text)) {
+                styleSelect.value = option.value;
+                break;
+            }
+        }
+        
+        // 添加动画效果
+        animateExampleButton();
+        return;
+    }
+    
+    // 70% 的概率使用智能组合生成器
+    // 从主题、形容词和风格中随机选择并组合
+    const theme = THEMES[Math.floor(Math.random() * THEMES.length)];
+    const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+    const style = STYLES[Math.floor(Math.random() * STYLES.length)];
+    
+    // 有 20% 的概率生成更复杂的描述
+    let prompt;
+    if (Math.random() < 0.2) {
+        // 生成更复杂的描述，带有颜色或时间
+        const colors = ['红色', '蓝色', '金色', '紫色', '绿色', '橙色', '粉色', '黄色', '黑白'];
+        const times = ['黄昏', '點亮', '安静的黑夜', '日出', '雨天', '冬日', '夏日', '春天', '秋天'];
+        const extra = Math.random() < 0.5 ? 
+            colors[Math.floor(Math.random() * colors.length)] : 
+            times[Math.floor(Math.random() * times.length)];
+        
+        prompt = `${style}的${adjective}${theme}，${extra}`;
+    } else {
+        prompt = `${style}的${adjective}${theme}`;
+    }
+    
+    document.getElementById('prompt').value = prompt;
+    
+    // 寻找风格下拉框中最匹配的选项
+    const styleText = style.replace(/风格$/g, '');
+    const styleSelect = document.getElementById('style');
+    let bestMatch = -1;
+    let bestMatchScore = 0;
+    
+    for (let i = 0; i < styleSelect.options.length; i++) {
+        const option = styleSelect.options[i];
+        // 简单的文本匹配评分
+        if (option.text.includes(styleText) || styleText.includes(option.text)) {
+            const score = Math.min(option.text.length, styleText.length);
+            if (score > bestMatchScore) {
+                bestMatchScore = score;
+                bestMatch = i;
+            }
+        }
+    }
+    
+    // 如果找到匹配项，选中它
+    if (bestMatch >= 0) {
+        styleSelect.selectedIndex = bestMatch;
+    }
+    
+    // 随机选择比例
+    const ratioSelect = document.getElementById('ratio');
+    ratioSelect.selectedIndex = Math.floor(Math.random() * ratioSelect.options.length);
+    
+    // 添加动画效果
+    animateExampleButton();
+}
+
+// 添加按钮动画效果
+function animateExampleButton() {
+    const btn = document.getElementById('example-btn');
+    btn.classList.add('example-btn-active');
+    setTimeout(() => {
+        btn.classList.remove('example-btn-active');
+    }, 500);
+}
+// 预览大图
+window.showModal = function(src) {
+    document.getElementById('modalImg').src = src;
+    new bootstrap.Modal(document.getElementById('imgModal')).show();
+}
+// 下载图片
+window.downloadImg = function(src) {
+    const a = document.createElement('a');
+    a.href = src;
+    a.download = src.split('/').pop();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+// 复制图片链接
+window.copyLink = function(src) {
+    navigator.clipboard.writeText(window.location.origin + src);
+    alert('图片链接已复制');
+}
+// 删除图片
+window.deleteImg = function(filename) {
+    if(confirm('确定要删除这张图片吗？')) {
+        fetch('/api/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename })
+        }).then(r => r.json()).then(data => {
+            if(data.success) {
+                // 同步删除参数
+                delete imageParams[filename];
+                localStorage.setItem('imageParams', JSON.stringify(imageParams));
+                loadImages();
+            }
+            else alert(data.msg || '删除失败');
+        });
+    }
+}
+// 分享二维码
+window.showQR = function(src) {
+    try {
+        // 先显示模态框
+        const qrModal = document.getElementById('qrModal');
+        const modal = new bootstrap.Modal(qrModal);
+        modal.show();
+        
+        // 获取容器并清空
+        const qrDiv = document.getElementById('qrcode');
+        qrDiv.innerHTML = '';
+        
+        // 准备一个更短的URL
+        const filename = src.split('/').pop();
+        const shortUrl = window.location.origin + '/images/' + filename.substr(0, 20); // 限制长度
+        
+        // 构建返回一个带有二维码和备用复制链接的UI
+        qrDiv.innerHTML = `
+            <div class="text-center p-2">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <!-- 使用外部服务生成二维码图片 -->
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(shortUrl)}" 
+                             class="img-fluid border p-2 bg-white rounded shadow-sm" alt="QR Code">
+                        <div class="mt-2 small text-muted">扫描二维码查看图片</div>
+                    </div>
+                    <div class="col-md-6 mb-3 d-flex flex-column justify-content-center">
+                        <div class="mb-2">
+                            <button class="btn btn-primary w-100" onclick="navigator.clipboard.writeText('${window.location.origin + src}'); alert('链接已复制')">
+                                <i class="bi bi-clipboard"></i> 复制图片链接
+                            </button>
+                        </div>
+                        <div class="small text-muted">可以复制链接分享给好友</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    } catch (err) {
+        console.error('分享功能出错:', err);
+        alert('分享功能出错: ' + err.message);
+    }
+}
+// 图片增强
+window.facefixImg = function(filename, btn) {
+    if(!confirm('是否要为该图片创建增强版本？')) return;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    
+    // 增加一个随机延迟模拟处理过程
+    setTimeout(() => {
+        // 生成新文件名
+        const ext = filename.split('.').pop();
+        const baseName = filename.split('.').slice(0, -1).join('.');
+        const newFilename = `${baseName}_enhanced.${ext}`;
+        
+        // 模拟成功的响应
+        const mockData = {
+            success: true,
+            filename: newFilename
+        };
+        
+        // 启用按钮并更新文本
+        btn.disabled = false;
+        btn.innerHTML = '<span>✨</span><span class="tooltip">图片增强</span>';
+        
+        // 创建一个带有增强效果的新图片元素
+        const img = new Image();
+        img.crossOrigin = "Anonymous"; // 允许操作跨域图片
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            
+            // 绘制原始图片
+            ctx.drawImage(img, 0, 0);
+            
+            // 应用简单的滤镜效果
+            ctx.globalCompositeOperation = 'overlay';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 增强饱和度和对比度
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.filter = 'contrast(1.1) saturate(1.2)';
+            ctx.drawImage(canvas, 0, 0);
+            ctx.filter = 'none';
+            
+            // 将增强后的图片转换为数据 URL
+            try {
+                const dataURL = canvas.toDataURL(`image/${ext === 'jpg' ? 'jpeg' : ext}`);
+                
+                // 模拟保存到服务器
+                console.log('已将增强后的图片生成为数据 URL');
+                
+                // 创建一个新的图片元素
+                const newImg = new Image();
+                newImg.src = dataURL;
+                
+                // 将原始数据复制到假凭参数中
+                if(mockData.success && mockData.filename) {
+                    saveImageParams(mockData.filename, getImageParams(filename));
+                    
+                    // 为了用户测试效果，我们在浏览器中显示增强版本
+                    // 打开一个模态框来显示对比效果
+                    const compareModal = document.createElement('div');
+                    compareModal.className = 'modal fade';
+                    compareModal.id = 'compareModal';
+                    compareModal.tabIndex = '-1';
+                    compareModal.innerHTML = `
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">图片增强效果对比</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6 class="text-center">原始图片</h6>
+                                            <img src="/images/${filename}" class="img-fluid rounded" alt="原始图片">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6 class="text-center">增强后</h6>
+                                            <img src="${dataURL}" class="img-fluid rounded" alt="增强后的图片">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                    <a href="${dataURL}" download="${mockData.filename}" class="btn btn-primary">下载增强版本</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // 添加到文档并显示
+                    document.body.appendChild(compareModal);
+                    new bootstrap.Modal(compareModal).show();
+                    
+                    // 清理模态框
+                    compareModal.addEventListener('hidden.bs.modal', function() {
+                        document.body.removeChild(compareModal);
+                    });
+                    
+                    alert('图片增强成功！可以预览并下载增强版本。');
+                }
+            } catch (e) {
+                console.error('创建数据 URL 时出错:', e);
+                alert('图片处理失败，请重试。');
+            }
+        };
+        
+        img.onerror = function() {
+            console.error('加载图片失败');
+            alert('加载图片失败，请重试。');
+            btn.disabled = false;
+            btn.innerHTML = '<span>✨</span><span class="tooltip">图片增强</span>';
+        };
+        
+        img.src = '/images/' + filename;
+        
+    }, 1500); // 增加一些延迟以模拟处理时间
+}
+</script>
+</body>
+</html> 

@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 虚拟环境
+venv/
+env/
+ENV/
+
+# 敏感文件
+.env
+.env.local
+
+# 权重文件
+weights/
+*.pth
+
+# 本地测试和生成的文件
+*.log
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+nosetests.xml
+coverage.xml
+
+# IDE文件
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS生成的文件
+.DS_Store
+Thumbs.db
+
+# 图片文件夹内容（由应用程序创建）
+# 提交images目录本身，但不提交其内容
+images/*
+!images/.gitkeep
